@@ -328,8 +328,9 @@ with col_results:
                 for res in all_results:
                     audit  = res["audit"]
                     fname  = res["file"]
-                    anomaly = audit.name_mismatch_detected or (
-                        audit.id_data and audit.id_data.is_expired
+                    anomaly: bool = bool(
+                        audit.name_mismatch_detected or
+                        (audit.id_data and audit.id_data.is_expired)
                     )
                     with st.expander(
                         f"{'🔴' if anomaly else '🟢'}  {fname} ({res['doc_type']}) — {audit.compliance_score * 100:.0f}%",
