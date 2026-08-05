@@ -1,0 +1,14 @@
+# SDK Google GenAI & Agent Development Kit (ADK)
+google-genai>=0.1.0
+google-cloud-aiplatform[agent_engines,adk]>=1.101.0
+
+# ClickHouse & Data
+clickhouse-connect>=0.7.0
+pydantic>=2.0.0
+
+# Environnement & Utils
+python-dotenv>=1.0.0
+pillow>=10.0.0
+
+# Dashboard UI
+streamlit>=1.30.0

@@ -1,0 +1,25 @@
+﻿# Environnement virtuel
+venv/
+.venv/
+env/
+
+# Variables d'environnement
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Données locales de test
+data/samples/*
+!data/samples/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Documentation interne
+docs/
