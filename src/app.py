@@ -202,20 +202,18 @@ with col_results:
     else:
         if st.button("RUN COMPLIANCE AUDIT"):
 
-            def _run_pipeline(uf):
-                """Process a single file through the full 3-agent pipeline.
-                Returns (audit, notice, doc_type, confidence).
-                Raises on Gemini or unexpected errors.
+            def _audit_file(uf):
+                """Runs 00-VISION + 00-AUDITOR on a single file.
+                Returns (audit, doc_type, confidence). Does NOT call 00-DISPATCH.
                 """
                 temp_path = os.path.join("data", "samples", uf.name)
                 os.makedirs(os.path.dirname(temp_path), exist_ok=True)
                 with open(temp_path, "wb") as f:
                     f.write(uf.getbuffer())
-
                 try:
                     st.write(f"**[00-VISION]** `{uf.name}` — Classifying…")
                     classification = agent_vision.classify(temp_path)
-                    doc_type = classification.document_type
+                    doc_type   = classification.document_type
                     confidence = classification.confidence
                     st.write(f"→ `{doc_type.value}` — Confidence: {confidence * 100:.1f}%")
 
@@ -223,30 +221,24 @@ with col_results:
                     audit = agent_auditor.audit(
                         temp_path, doc_type, reference_name=crew_member_ref.strip()
                     )
-                    st.write(f"→ Compliance score: `{audit.compliance_score * 100:.0f}%`")
-
-                    st.write(f"**[00-DISPATCH]** `{uf.name}` — Generating notification…")
-                    notice = agent_dispatch.generate_notice(
-                        audit, doc_type, reference_name=crew_member_ref.strip()
-                    )
-
-                    return audit, notice, doc_type, confidence
-
+                    st.write(f"→ Score: `{audit.compliance_score * 100:.0f}%`")
+                    return audit, doc_type, confidence
                 finally:
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
 
-            # ── Process all files ──────────────────────────────────────────
+            # ── Step 1 : audit every file individually ─────────────────────
             all_results = []
 
             with st.status(
-                f"Processing {len(uploaded_files)} file(s)…", expanded=True
+                f"Auditing {len(uploaded_files)} document(s) for {crew_member_ref.strip()}…",
+                expanded=True,
             ) as status:
                 pipeline_ok = True
                 for i, uf in enumerate(uploaded_files, 1):
-                    st.markdown(f"---\n**File {i}/{len(uploaded_files)} — `{uf.name}`**")
+                    st.markdown(f"---\n**Document {i}/{len(uploaded_files)} — `{uf.name}`**")
                     try:
-                        audit, notice, doc_type, confidence = _run_pipeline(uf)
+                        audit, doc_type, confidence = _audit_file(uf)
                     except ClientError as e:
                         st.error(f"Gemini API error on `{uf.name}`: {e.message}")
                         pipeline_ok = False
@@ -256,7 +248,7 @@ with col_results:
                         pipeline_ok = False
                         break
 
-                    # Persist to ClickHouse
+                    # Persist each document to ClickHouse
                     full_name = (
                         audit.id_data.full_name if audit.id_data
                         else (audit.bank_data.account_holder_name if audit.bank_data else crew_member_ref)
@@ -265,29 +257,40 @@ with col_results:
                         audit.id_data.document_number if audit.id_data
                         else (audit.bank_data.iban_or_account_num if audit.bank_data else "")
                     )
-                    is_expired = audit.id_data.is_expired if audit.id_data else False
-
                     db_manager.log_audit(
                         doc_type=doc_type.value,
                         confidence=confidence,
                         full_name=full_name,
                         doc_num=doc_num,
-                        is_expired=is_expired,
+                        is_expired=audit.id_data.is_expired if audit.id_data else False,
                         mismatch=audit.name_mismatch_detected,
                         score=audit.compliance_score,
                         notes=audit.audit_notes,
                     )
-
                     all_results.append({
-                        "file":    uf.name,
-                        "audit":   audit,
-                        "notice":  notice,
-                        "doc_type": doc_type,
+                        "file":       uf.name,
+                        "audit":      audit,
+                        "doc_type":   doc_type.value,
+                        "confidence": confidence,
                     })
+
+                # ── Step 2 : one global notification for the whole dossier ──
+                global_notice = None
+                if pipeline_ok and all_results:
+                    st.markdown("---\n**[00-DISPATCH]** Generating unified dossier notification…")
+                    try:
+                        global_notice = agent_dispatch.generate_global_notice(
+                            audits=all_results,
+                            reference_name=crew_member_ref.strip(),
+                            production_title=production_title,
+                        )
+                        st.write("→ Notification ready.")
+                    except Exception as e:
+                        st.warning(f"Could not generate notification: {e}")
 
                 if pipeline_ok:
                     status.update(
-                        label=f"{len(all_results)} file(s) processed successfully.",
+                        label=f"Dossier processed — {len(all_results)} document(s).",
                         state="complete",
                         expanded=False,
                     )
@@ -299,39 +302,46 @@ with col_results:
                     )
 
             # ----------------------------------------------------------------
-            # Screen 3 — Audit Report (one expander per file)
+            # Screen 3 — Dossier Report
             # ----------------------------------------------------------------
             if all_results:
                 st.markdown("---")
-                st.markdown("#### Audit Report")
 
+                # Global compliance banner
+                global_score = sum(r["audit"].compliance_score for r in all_results) / len(all_results)
+                has_anomaly  = any(
+                    r["audit"].name_mismatch_detected or
+                    (r["audit"].id_data and r["audit"].id_data.is_expired)
+                    for r in all_results
+                )
+
+                st.markdown(f"#### Dossier — {crew_member_ref.strip()}")
+                if has_anomaly:
+                    st.error(f"DOSSIER INCOMPLETE — Overall compliance: {global_score * 100:.0f}%")
+                else:
+                    st.success(f"DOSSIER FULLY COMPLIANT — Overall compliance: {global_score * 100:.0f}%")
+
+                # Per-document detail panels
+                st.markdown("**Document breakdown:**")
                 for res in all_results:
                     audit  = res["audit"]
-                    notice = res["notice"]
                     fname  = res["file"]
                     anomaly = audit.name_mismatch_detected or (
                         audit.id_data and audit.id_data.is_expired
                     )
-
                     with st.expander(
-                        f"{'🔴' if anomaly else '🟢'}  {fname} — Score: {audit.compliance_score * 100:.0f}%",
+                        f"{'🔴' if anomaly else '🟢'}  {fname} ({res['doc_type']}) — {audit.compliance_score * 100:.0f}%",
                         expanded=anomaly,
                     ):
-                        if anomaly:
-                            st.error(f"ANOMALY DETECTED — Compliance score: {audit.compliance_score * 100:.0f}%")
-                        else:
-                            st.success(f"COMPLIANT — Compliance score: {audit.compliance_score * 100:.0f}%")
-
                         if audit.id_data:
                             st.markdown(f"**Full Name (ID):** {audit.id_data.full_name}")
                             st.markdown(f"**Document Number:** `{audit.id_data.document_number}`")
-                            st.markdown(f"**Expiry Date:** {audit.id_data.expiration_date}")
+                            st.markdown(f"**Expiry:** {audit.id_data.expiration_date}")
                             if audit.id_data.is_expired:
                                 st.markdown(
                                     '<span style="color:#E50914;font-weight:700;">⚠ EXPIRED DOCUMENT</span>',
                                     unsafe_allow_html=True,
                                 )
-
                         if audit.bank_data:
                             st.markdown(f"**RIB Holder:** {audit.bank_data.account_holder_name}")
                             st.markdown(f"**IBAN:** `{audit.bank_data.iban_or_account_num}`")
@@ -343,20 +353,22 @@ with col_results:
                                     f'</span>',
                                     unsafe_allow_html=True,
                                 )
-
                         if audit.transcribed_text:
                             st.markdown("**Handwritten Transcription:**")
                             st.code(audit.transcribed_text, language=None)
-
                         st.markdown(f"*Audit notes:* {audit.audit_notes}")
 
-                        st.markdown("---")
-                        st.markdown("**00-DISPATCH Notification**")
-                        if notice.requires_action:
-                            for issue in notice.issues_found:
-                                st.markdown(
-                                    f'<span style="color:#E50914;">⚠ {issue}</span>',
-                                    unsafe_allow_html=True,
-                                )
-                        st.markdown(f"**Subject:** {notice.email_subject}")
-                        st.code(notice.message_body, language=None)
+                # Single global notification at the bottom
+                if global_notice:
+                    st.markdown("---")
+                    st.markdown("#### 00-DISPATCH — Unified Dossier Notification")
+                    if global_notice.requires_action:
+                        for issue in global_notice.issues_found:
+                            st.markdown(
+                                f'<span style="color:#E50914;">⚠ {issue}</span>',
+                                unsafe_allow_html=True,
+                            )
+                    else:
+                        st.success("All documents validated — no action required.")
+                    st.markdown(f"**Subject:** {global_notice.email_subject}")
+                    st.code(global_notice.message_body, language=None)
