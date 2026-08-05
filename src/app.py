@@ -309,9 +309,11 @@ with col_results:
 
                 # Global compliance banner
                 global_score = sum(r["audit"].compliance_score for r in all_results) / len(all_results)
-                has_anomaly  = any(
-                    r["audit"].name_mismatch_detected or
-                    (r["audit"].id_data and r["audit"].id_data.is_expired)
+                has_anomaly = any(
+                    bool(
+                        r["audit"].name_mismatch_detected or
+                        (r["audit"].id_data and r["audit"].id_data.is_expired)
+                    )
                     for r in all_results
                 )
 

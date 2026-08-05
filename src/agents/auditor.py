@@ -52,13 +52,15 @@ class AuditorAgent:
             file_bytes = f.read()
 
         prompt = f"""
-        Tu es l'agent '00-AUDITOR' de NavourSync AI.
-        Le document ci-joint a été identifié comme : {doc_type.value}.
-        Ta mission :
-        1. Extraire rigoureusement toutes les informations textuelles obligatoires.
-        2. Si c'est une CNI, vérifie si la date d'expiration est dépassée par rapport à aujourd'hui (Août 2026).
-        3. Si un nom de référence ({reference_name or 'N/A'}) est fourni, vérifie scrupuleusement si le nom extrait du RIB/Document correspond EXACTEMENT.
-        4. Si c'est une demande manuscrite, transcris l'intégralité du texte avec précision.
+        You are the '00-AUDITOR' agent of NavourSync AI.
+        The document has been identified as: {doc_type.value}.
+        Your mission:
+        1. Extract all mandatory text fields rigorously.
+        2. If this is an ID card or passport, check whether the expiry date has passed relative to today (August 2026).
+        3. If a reference name is provided ({reference_name or 'N/A'}), verify whether the name on the document matches.
+           IMPORTANT: treat first name / last name in reverse order as a MATCH (e.g. "Damon Salvatorr" == "Salvatorr Damon").
+           Only flag name_mismatch_detected=true if the names are genuinely different people, not just reversed.
+        4. If this is a handwritten request, transcribe the full text accurately.
         """
 
         response = self.client.models.generate_content(
