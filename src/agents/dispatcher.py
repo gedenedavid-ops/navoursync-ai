@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Literal
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
@@ -12,8 +12,33 @@ class DispatchNotice(BaseModel):
     recipient_name: str = Field(description="Full name of the crew member")
     requires_action: bool = Field(description="True if action is required from the crew member")
     issues_found: List[str] = Field(description="Exhaustive list of all issues detected across all documents")
-    email_subject: str = Field(description="Professional email subject line")
-    message_body: str = Field(description="Full professional email body covering all documents in the dossier")
+
+    # ── Nouveau : avis de décision ──────────────────────────────────────────
+    decision: Literal["VALIDATED", "PENDING", "BLOCKED"] = Field(
+        description=(
+            "VALIDATED = all documents compliant, crew member cleared to work. "
+            "PENDING = minor issues, documents need correction but not blocking. "
+            "BLOCKED = critical fraud or expired ID, crew member cannot work until resolved."
+        )
+    )
+
+    # ── Nouveau : note interne HR (confidentielle, pour le régisseur) ───────
+    hr_note: str = Field(
+        description=(
+            "Short internal HR note (2-4 sentences) summarising the audit outcome "
+            "for the production manager. Confidential — not sent to the crew member. "
+            "Mention document numbers, expiry dates, and any fraud flags explicitly."
+        )
+    )
+
+    # ── Email à envoyer (EN) ────────────────────────────────────────────────
+    email_subject: str = Field(description="Professional email subject line in English")
+    message_body: str = Field(description="Full professional email body in English covering all documents")
+
+    # ── Message à envoyer (FR) ──────────────────────────────────────────────
+    message_body_fr: str = Field(
+        description="Same professional message translated into French, same structure and tone"
+    )
 
 
 class DispatcherAgent:
@@ -105,13 +130,26 @@ Overall compliance score: {global_score * 100:.0f}%
 Here is the detailed audit of each document in their dossier:
 {docs_summary}
 
-INSTRUCTIONS:
-- Write ONE single professional email that covers ALL documents in the dossier.
-- If there are anomalies, list every issue clearly and specify which document it concerns.
-- Be firm but polite. Give a 48-hour deadline to resubmit corrected documents.
-- If all documents are compliant, write a warm validation confirmation.
-- The email must feel like it comes from a professional production HR department.
-- Do NOT write a separate email per document — this must be ONE unified message.
+INSTRUCTIONS — produce all four outputs below:
+
+1. DECISION (choose exactly one):
+   - VALIDATED  : every document is compliant and valid → crew member is cleared to work
+   - PENDING    : at least one document has a minor issue (low confidence, missing field) but no fraud or expiry
+   - BLOCKED    : at least one document is expired OR a RIB name mismatch was detected (potential bank fraud)
+
+2. HR NOTE (internal, confidential, for the production manager only):
+   - 2 to 4 sentences maximum
+   - Mention document numbers, expiry dates, and exact nature of any fraud flag
+   - Neutral, factual tone — no pleasantries
+
+3. EMAIL (in English, to send to the crew member):
+   - Professional subject line
+   - If VALIDATED  : warm confirmation, list all validated documents
+   - If PENDING    : polite but firm, list each issue, give 48-hour deadline to resubmit
+   - If BLOCKED    : serious tone, specify blocked reason, instruct to contact HR immediately
+   - Sign off as "NavourSync HR Compliance — {production_title}"
+
+4. MESSAGE FR (exact same email translated into French, identical structure and tone)
 """
 
         response = self.client.models.generate_content(

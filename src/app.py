@@ -543,14 +543,57 @@ else:
                     st.markdown("<hr style='margin:0.6rem 0;border-color:#1a1a1d;'>",
                                 unsafe_allow_html=True)
 
-                # Global dispatch notification
+                # ── Global dispatch notification ───────────────────────────
                 if res["notice"]:
                     notice = res["notice"]
-                    if notice.requires_action:
+
+                    st.markdown("<hr style='margin:0.8rem 0;border-color:#1a1a1d;'>",
+                                unsafe_allow_html=True)
+
+                    # 1. Badge décision
+                    decision_colors = {
+                        "VALIDATED": ("#0a2a12", "#30D158"),
+                        "PENDING":   ("#1a1500", "#FFD60A"),
+                        "BLOCKED":   ("#2a0608", "#E50914"),
+                    }
+                    bg, fg = decision_colors.get(notice.decision, ("#1e1e22", "#8E8E93"))
+                    st.markdown(
+                        f'<span style="display:inline-block;background:{bg};color:{fg};'
+                        f'border:1px solid {fg};font-size:11px;font-weight:700;'
+                        f'letter-spacing:1.5px;padding:3px 10px;border-radius:2px;'
+                        f'text-transform:uppercase;">{notice.decision}</span>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown("")
+
+                    # 2. Note interne HR
+                    st.markdown(
+                        '<span style="font-size:10px;font-weight:700;letter-spacing:1.5px;'
+                        'color:#3a3a3f;text-transform:uppercase;">Internal HR Note</span>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f'<div style="background:#0d0d0e;border:1px solid #1e1e22;'
+                        f'border-radius:4px;padding:0.7rem 1rem;font-size:13px;'
+                        f'color:#8E8E93;font-style:italic;">{notice.hr_note}</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown("")
+
+                    # 3. Issues list (si anomalies)
+                    if notice.requires_action and notice.issues_found:
                         for issue in notice.issues_found:
                             st.markdown(
                                 f'<span style="color:#E50914;font-size:12px;">⚠ {issue}</span>',
                                 unsafe_allow_html=True,
                             )
-                    st.markdown(f"**{notice.email_subject}**")
-                    st.code(notice.message_body, language=None)
+                        st.markdown("")
+
+                    # 4. Email EN / FR avec onglets
+                    tab_en, tab_fr = st.tabs(["📧 Email (EN)", "📧 Message (FR)"])
+                    with tab_en:
+                        st.markdown(f"**{notice.email_subject}**")
+                        st.code(notice.message_body, language=None)
+                    with tab_fr:
+                        st.markdown(f"**{notice.email_subject}**")
+                        st.code(notice.message_body_fr, language=None)
