@@ -169,8 +169,10 @@ details summary { color: #FFFFFF !important; font-weight: 500; padding: 0.6rem 0
 # ─────────────────────────────────────────────────────────────────────────────
 # System init
 # ─────────────────────────────────────────────────────────────────────────────
-api_key   = os.getenv("GEMINI_API_KEY", "")
-api_ready = bool(api_key) and api_key != "your_gemini_api_key_here"
+# api_ready = True si Vertex AI mode OU si clé API valide fournie
+_use_vertex = os.getenv("USE_VERTEX_AI", "false").lower() == "true"
+_api_key    = os.getenv("GEMINI_API_KEY", "")
+api_ready   = _use_vertex or (bool(_api_key) and _api_key != "your_gemini_api_key_here")
 
 
 @st.cache_resource
@@ -198,14 +200,19 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**System**")
 
-    gemini_status = "🟢 Gemini — connected" if api_ready else "🔴 Gemini — API key missing"
-    ch_status     = "🟢 ClickHouse — connected" if db_manager.client else "🟡 ClickHouse — offline"
+    if _use_vertex:
+        gemini_status = "🟢 Gemini — Vertex AI"
+    elif api_ready:
+        gemini_status = "🟢 Gemini — API key"
+    else:
+        gemini_status = "🔴 Gemini — not configured"
+    ch_status = "🟢 ClickHouse — connected" if db_manager.client else "🟡 ClickHouse — offline"
     st.markdown(f"<small>{gemini_status}</small>", unsafe_allow_html=True)
     st.markdown(f"<small>{ch_status}</small>", unsafe_allow_html=True)
 
     if not api_ready:
         st.markdown("---")
-        st.warning("Set GEMINI_API_KEY in .env")
+        st.warning("Set GEMINI_API_KEY or USE_VERTEX_AI=true in secrets")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Header
