@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 from src.agents.auditor import AuditResult
 from src.agents.classifier import DocumentType
+from src.utils.retry import call_with_retry
 
 
 # 1. Schéma de sortie pour le message de relance
@@ -69,7 +70,7 @@ class DispatcherAgent:
         If fully compliant, generate a validation confirmation message.
         """
 
-        response = self.client.models.generate_content(
+        response = call_with_retry(lambda: self.client.models.generate_content(
             model=self.model,
             contents=[prompt],
             config=types.GenerateContentConfig(
@@ -77,7 +78,7 @@ class DispatcherAgent:
                 response_schema=DispatchNotice,
                 temperature=0.2,
             ),
-        )
+        ))
 
         return DispatchNotice.model_validate_json(response.text)
 
@@ -152,7 +153,7 @@ INSTRUCTIONS — produce all four outputs below:
 4. MESSAGE FR (exact same email translated into French, identical structure and tone)
 """
 
-        response = self.client.models.generate_content(
+        response = call_with_retry(lambda: self.client.models.generate_content(
             model=self.model,
             contents=[prompt],
             config=types.GenerateContentConfig(
@@ -160,6 +161,6 @@ INSTRUCTIONS — produce all four outputs below:
                 response_schema=DispatchNotice,
                 temperature=0.2,
             ),
-        )
+        ))
 
         return DispatchNotice.model_validate_json(response.text)

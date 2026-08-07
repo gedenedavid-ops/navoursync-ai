@@ -3,6 +3,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
+from src.utils.retry import call_with_retry
 
 
 # 1. Catégories strictes de documents de production/casting
@@ -56,17 +57,17 @@ class VisionClassifierAgent:
         If the document has signature lines and clauses about image/video rights but NO IBAN, classify it as image_rights_release.
         """
 
-        response = self.client.models.generate_content(
+        response = call_with_retry(lambda: self.client.models.generate_content(
             model=self.model,
             contents=[
                 types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
-                prompt
+                prompt,
             ],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=DocumentClassificationResult,
-                temperature=0.1,  # Faible température pour un comportement déterministe
-            )
-        )
+                temperature=0.1,
+            ),
+        ))
 
         return DocumentClassificationResult.model_validate_json(response.text)

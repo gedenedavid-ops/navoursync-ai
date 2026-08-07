@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from src.agents.classifier import DocumentType
+from src.utils.retry import call_with_retry
 
 
 # 1. Modèles Pydantic pour structurer les données extraites
@@ -67,7 +68,7 @@ class AuditorAgent:
         5. For RIB/IBAN documents: extract the account holder name and IBAN exactly as printed.
         """
 
-        response = self.client.models.generate_content(
+        response = call_with_retry(lambda: self.client.models.generate_content(
             model=self.model,
             contents=[
                 types.Part.from_bytes(data=file_bytes, mime_type="image/jpeg"),
@@ -76,8 +77,8 @@ class AuditorAgent:
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=AuditResult,
-                temperature=0.0,  # Déterminisme absolu pour les données RH
+                temperature=0.0,
             ),
-        )
+        ))
 
         return AuditResult.model_validate_json(response.text)
