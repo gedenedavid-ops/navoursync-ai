@@ -1,10 +1,10 @@
 import os
 from typing import Optional
 from pydantic import BaseModel, Field
-from google import genai
 from google.genai import types
 from src.agents.classifier import DocumentType
 from src.utils.retry import call_with_retry
+from src.utils.gemini_client import get_gemini_client
 
 
 # 1. Modèles Pydantic pour structurer les données extraites
@@ -33,9 +33,8 @@ class AuditResult(BaseModel):
 
 
 class AuditorAgent:
-    def __init__(self, api_key: str = None):
-        self.client = genai.Client(api_key=api_key or os.getenv("GEMINI_API_KEY"))
-        # Gemini 2.5 Flash excelle dans la structuration OCR rapide
+    def __init__(self):
+        self.client = get_gemini_client()
         self.model = "gemini-2.5-flash"
 
     def audit(

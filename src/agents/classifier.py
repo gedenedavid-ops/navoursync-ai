@@ -1,9 +1,9 @@
 import os
 from enum import Enum
 from pydantic import BaseModel, Field
-from google import genai
 from google.genai import types
 from src.utils.retry import call_with_retry
+from src.utils.gemini_client import get_gemini_client
 
 
 # 1. Catégories strictes de documents de production/casting
@@ -26,9 +26,8 @@ class DocumentClassificationResult(BaseModel):
 
 
 class VisionClassifierAgent:
-    def __init__(self, api_key: str = None):
-        self.client = genai.Client(api_key=api_key or os.getenv("GEMINI_API_KEY"))
-        # Utilisation du modèle Gemini 2.5 Flash pour une classification rapide et précise
+    def __init__(self):
+        self.client = get_gemini_client()
         self.model = "gemini-2.5-flash"
 
     def classify(self, file_path: str, mime_type: str = "image/jpeg") -> DocumentClassificationResult:
