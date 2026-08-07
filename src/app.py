@@ -449,15 +449,22 @@ else:
         st.markdown("## Production Report")
 
         # ── Summary table ─────────────────────────────────────────────────────
+        def _has_real_anomaly(audits):
+            """True only for genuine issues: expired ID or RIB name fraud."""
+            for a in audits:
+                audit = a["audit"]
+                if audit.id_data and audit.id_data.is_expired:
+                    return True
+                # mismatch only counts as fraud when it's on a bank document
+                if audit.bank_data and audit.name_mismatch_detected:
+                    return True
+            return False
+
         for res in results:
             if res["error"] or not res["audits"]:
                 continue
             score = sum(a["audit"].compliance_score for a in res["audits"]) / len(res["audits"])
-            anomaly = any(
-                bool(a["audit"].name_mismatch_detected or
-                     (a["audit"].id_data and a["audit"].id_data.is_expired))
-                for a in res["audits"]
-            )
+            anomaly = _has_real_anomaly(res["audits"])
             badge = (
                 '<span class="badge-err">Incomplete</span>'
                 if anomaly else
@@ -485,23 +492,20 @@ else:
                 continue
 
             score   = sum(a["audit"].compliance_score for a in res["audits"]) / len(res["audits"])
-            anomaly = any(
-                bool(a["audit"].name_mismatch_detected or
-                     (a["audit"].id_data and a["audit"].id_data.is_expired))
-                for a in res["audits"]
-            )
+            anomaly = _has_real_anomaly(res["audits"])
             icon = "🔴" if anomaly else "🟢"
 
             with st.expander(
                 f"{icon}  {name}  ·  {res['role']}  ·  {score * 100:.0f}%",
-                expanded=anomaly,
+                expanded=bool(anomaly),
             ):
                 # Per-document breakdown
                 for item in res["audits"]:
                     audit = item["audit"]
+                    # doc-level anomaly: expired ID or RIB fraud only
                     doc_anomaly = bool(
-                        audit.name_mismatch_detected or
-                        (audit.id_data and audit.id_data.is_expired)
+                        (audit.id_data and audit.id_data.is_expired) or
+                        (audit.bank_data and audit.name_mismatch_detected)
                     )
                     st.markdown(
                         f"**{item['file']}** &nbsp;"

@@ -57,10 +57,14 @@ class AuditorAgent:
         Your mission:
         1. Extract all mandatory text fields rigorously.
         2. If this is an ID card or passport, check whether the expiry date has passed relative to today (August 2026).
-        3. If a reference name is provided ({reference_name or 'N/A'}), verify whether the name on the document matches.
-           IMPORTANT: treat first name / last name in reverse order as a MATCH (e.g. "Damon Salvatorr" == "Salvatorr Damon").
-           Only flag name_mismatch_detected=true if the names are genuinely different people, not just reversed.
+        3. If a reference name is provided, compare it against the name on the document using these rules:
+           - Reference name: "{reference_name or 'N/A'}"
+           - Normalize both names before comparing: convert to uppercase, strip accents, ignore extra spaces.
+           - Reversed first name / last name order counts as a MATCH (e.g. "Damon Salvatorr" == "Salvatorr Damon").
+           - Minor spelling differences (1–2 characters) between identical tokens count as a MATCH (e.g. "salavtor" ≈ "Salvatorr").
+           - Set name_mismatch_detected=true ONLY if the names clearly refer to two different people after applying the above rules.
         4. If this is a handwritten request, transcribe the full text accurately.
+        5. For RIB/IBAN documents: extract the account holder name and IBAN exactly as printed.
         """
 
         response = self.client.models.generate_content(
