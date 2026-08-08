@@ -4,117 +4,153 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-white.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
-[![Powered by Gemini](https://img.shields.io/badge/Powered%20by-Gemini%202.5-orange.svg)](https://deepmind.google/technologies/gemini/)
-[![ClickHouse](https://img.shields.io/badge/Database-ClickHouse-yellow.svg)](https://clickhouse.com)
+[![Gemini 2.5 Flash](https://img.shields.io/badge/Gemini-2.5%20Flash-orange.svg)](https://deepmind.google/technologies/gemini/)
+[![Google ADK](https://img.shields.io/badge/Google%20ADK-2.6.1-4285F4.svg)](https://google.github.io/adk-docs/)
+[![Agent Engine](https://img.shields.io/badge/Vertex%20AI-Agent%20Engine-34A853.svg)](https://cloud.google.com/vertex-ai/docs/agent-engine)
+[![ClickHouse Partner](https://img.shields.io/badge/Partner-ClickHouse%20Cloud-FFDD57.svg)](https://clickhouse.com)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-red.svg)](https://streamlit.io)
-[![Hackathon](https://img.shields.io/badge/Hackathon-Google%20×%20ClickHouse%202026-blue.svg)](https://devpost.com)
+[![Hackathon](https://img.shields.io/badge/Hackathon-Agentic%20Cinema%202026-blue.svg)](https://devpost.com)
 
 ---
 
 ## What is NavourSync AI?
 
-NavourSync AI is an **autonomous multi-agent HR compliance system** for the film and media production industry. It replaces the manual process of verifying crew dossiers by automatically classifying documents, extracting data via OCR, detecting fraud, and dispatching professional notifications — all powered by **Google Gemini 2.5** and persisted in **ClickHouse Cloud** for real-time analytics.
+NavourSync AI is an **autonomous multi-agent HR compliance system** for the film and media production industry, built natively on the **Google Agent Development Kit (ADK)** and **Vertex AI Agent Engine**.
 
-> Think of it as a tireless HR officer that processes any crew document in under 10 seconds, detects expired IDs, catches bank fraud attempts, and sends the right email automatically.
+It replaces the manual process of verifying crew dossiers — automatically classifying documents, extracting data via OCR, detecting fraud, dispatching professional notifications — all powered by **Gemini 2.5 Flash** and persisted in **ClickHouse Cloud** (official hackathon partner) for real-time analytics.
 
-Built for the **Agentic Cinema: The Blockbuster Hackathon** — submission deadline: September 7, 2026.
+> Built for the **Agentic Cinema: The Blockbuster Hackathon** — submission deadline: September 7, 2026.
 
 ---
 
 ## The Problem
 
-Every film production requires each crew member (actors, technicians, stunt performers) to submit a complete administrative dossier before they can legally work on set:
+Every film production requires each crew member — actors, technicians, stunt performers — to submit a complete administrative dossier before legally working on set:
 
 | Document | Compliance Check |
 |---|---|
 | 🪪 National ID / Passport | Must not be expired on the shooting date |
 | 🏦 RIB / IBAN bank statement | Account holder name must exactly match the ID card |
-| 📝 Image rights release | Must be signed |
-| ✍️ Handwritten employment request | Must be legible and complete |
+| 📝 Image rights release | Must be signed and complete |
+| ✍️ Handwritten employment request | Must be legible and fully filled |
 
-Without automation, the production manager checks everything manually — a time-consuming, error-prone process exposed to payroll fraud. NavourSync AI automates the entire verification pipeline.
+Without automation, the production manager checks everything manually — a time-consuming, error-prone process exposed to payroll fraud. NavourSync AI automates the entire verification pipeline in **under 10 seconds per dossier**.
 
 ---
 
 ## Key Features
 
-- 🔍 **Multi-modal document classification** — identifies 7 document types from a photo with confidence score
-- 📄 **Structured OCR extraction** — extracts name, document number, expiry date, IBAN with zero hallucination (temperature=0.0)
-- 🚨 **Anti-fraud cross-check** — instantly detects when the RIB account holder ≠ the crew member on file
-- 📅 **Expiry validation** — automatically flags IDs and passports expired before the shoot date
-- ✉️ **Automated notifications** — 00-DISPATCH generates a ready-to-send professional email for every anomaly
-- 📊 **Real-time analytics** — every audit is persisted in ClickHouse Cloud and surfaced on the dashboard
-- 🗂️ **Batch processing** — drop an entire dossier (CNI + RIB + contract) in one go and audit all files at once
+- 🤖 **Google ADK native** — agents declared with `google.adk.agents.Agent` + `FunctionTool`, orchestrated by a single `OrchestratorAgent`
+- 🔍 **Multi-modal document classification** — identifies 7 document types with confidence score (00-VISION)
+- 📄 **Structured OCR extraction** — extracts name, document number, expiry date, IBAN at temperature=0.0 (zero hallucination)
+- 🚨 **Anti-fraud cross-check** — detects when RIB account holder ≠ crew member reference name
+- 📅 **Expiry validation** — automatically flags IDs and passports expired before shoot date
+- ✉️ **Automated HR notices** — 00-DISPATCH generates decision badge (VALIDATED / PENDING / BLOCKED), internal HR note, and ready-to-send email in EN + FR
+- 📊 **Real-time analytics** — every audit persisted in **ClickHouse Cloud** and surfaced live on the dashboard
+- 🗂️ **Multi-member batch** — upload a full crew roster, each member gets an independent parallel audit
 - ✍️ **Handwritten transcription** — converts handwritten employment requests to typed text
+- 🔁 **Exponential backoff retry** — auto-retries on Gemini 429 / 503 with 5s → 10s → 20s → 40s schedule
 
 ---
 
-## Architecture — 4 Autonomous Gemini Agents
+## Architecture — Google ADK Multi-Agent Network
 
 ```
-[ Document: JPG / PNG ]
-           │
-           ▼
-┌─────────────────────────────────┐
-│   AGENT 1 : 00-VISION           │  gemini-2.5-flash · temp=0.1
-│   Multi-modal Classifier        │  Identifies document type + confidence score
-└────────────────┬────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────┐
-│   AGENT 2 : 00-AUDITOR          │  gemini-2.5-flash · temp=0.0
-│   OCR & Compliance Engine       │  Extracts fields, checks expiry, cross-checks names
-└────────────────┬────────────────┘
-                 │
-       ┌─────────┴──────────┐
-       ▼                    ▼
-  [Anomaly]            [Compliant]
-       │                    │
-       ▼                    ▼
-┌─────────────────┐  ┌──────────────────────┐
-│  AGENT 3        │  │  AGENT 4             │
-│  00-DISPATCH    │  │  00-ANALYTICS        │
-│  Notifications  │  │  ClickHouse Pipeline │
-└─────────────────┘  └──────────────────────┘
+[ JPG / PNG Documents ]
+         │
+         ▼
+┌─────────────────────────────────────────────────────────┐
+│   ADK OrchestratorAgent — navoursync_orchestrator        │
+│   google.adk.agents.Agent · gemini-2.5-flash             │
+│                                                          │
+│   FunctionTool: classify_document()                      │
+│   FunctionTool: audit_document()                         │
+│   FunctionTool: generate_crew_notice()                   │
+└──────────────┬──────────────────────────────────────────┘
+               │ tool calls
+       ┌───────┼───────────────────┐
+       ▼       ▼                   ▼
+┌──────────┐ ┌──────────────┐ ┌──────────────┐
+│ 00-VISION│ │ 00-AUDITOR   │ │ 00-DISPATCH  │
+│ temp=0.1 │ │ temp=0.0     │ │ temp=0.2     │
+│ Classify │ │ OCR + Fraud  │ │ HR Notice    │
+└──────────┘ └──────┬───────┘ └──────────────┘
+                    │
+                    ▼
+         ┌─────────────────────┐
+         │  00-ANALYTICS       │
+         │  ClickHouse Cloud   │  ← Official Hackathon Partner
+         │  Real-time metrics  │
+         └─────────────────────┘
 ```
 
-| Agent | Model | Role |
-|---|---|---|
-| **00-VISION** | `gemini-2.5-flash` | Classifies documents into 7 categories with a confidence score |
-| **00-AUDITOR** | `gemini-2.5-flash` | Deterministic OCR, expiry check, anti-fraud name cross-check |
-| **00-DISPATCH** | `gemini-2.5-flash` | Generates professional email for anomalies or validation confirmation |
-| **00-ANALYTICS** | ClickHouse | Persists all audit results for real-time compliance dashboards |
+| Agent | ADK Role | Model | Temperature |
+|---|---|---|---|
+| **00-VISION** | `FunctionTool: classify_document` | `gemini-2.5-flash` | 0.1 |
+| **00-AUDITOR** | `FunctionTool: audit_document` | `gemini-2.5-flash` | 0.0 |
+| **00-DISPATCH** | `FunctionTool: generate_crew_notice` | `gemini-2.5-flash` | 0.2 |
+| **00-ANALYTICS** | Persistent store | ClickHouse Cloud | — |
 
 ### Why `temperature=0.0` on 00-AUDITOR?
 
-HR data (names, document numbers, expiry dates) requires **zero creativity**. Setting temperature to 0.0 forces Gemini to always pick the most probable token — fully deterministic output. Any "creativity" on an ID number would be a hallucination.
+HR data (names, document numbers, expiry dates) requires **zero creativity**. Temperature 0.0 forces Gemini to always pick the most probable token — fully deterministic, hallucination-free output for legal compliance data.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Version |
+| Layer | Technology | Notes |
 |---|---|---|
-| AI Agents | `google-genai` SDK — Gemini 2.5 Flash | 2.16.0 |
-| Cloud Orchestration | Google Cloud Vertex AI Agent Engine | — |
-| Data Validation | Pydantic v2 — deterministic JSON schemas | 2.12.5 |
-| Analytics Database | ClickHouse Cloud (`clickhouse-connect`) | 1.6.0 |
-| Dashboard UI | Streamlit | 1.60.0 |
-| Runtime | Python 3.10+ | — |
+| **Agent Framework** | Google ADK (`google-cloud-aiplatform[adk]`) v2.6.1 | Native ADK — no wrapper libraries |
+| **AI Model** | Gemini 2.5 Flash via `google-genai` SDK | Multimodal, structured JSON output |
+| **Cloud Backend** | Google Cloud Vertex AI Agent Engine | Serverless agent hosting |
+| **Partner Database** | **ClickHouse Cloud** (`clickhouse-connect`) | Real-time audit analytics |
+| **Data Validation** | Pydantic v2 | Deterministic JSON schemas |
+| **Dashboard UI** | Streamlit | Deployed on Streamlit Community Cloud |
+| **Auth** | Vertex AI ADC / Service Account | Production-grade GCP auth |
+| **Runtime** | Python 3.10+ | — |
+
+---
+
+## ClickHouse Cloud — Partner Integration
+
+NavourSync AI uses **ClickHouse Cloud** as the real-time analytics backend — an official partner of this hackathon.
+
+Every document audit is immediately inserted into ClickHouse via `clickhouse-connect`:
+
+```python
+db_manager.log_audit(
+    doc_type=doc_type.value,
+    confidence=confidence,
+    full_name=full_name,
+    doc_num=doc_num,
+    is_expired=audit.id_data.is_expired,
+    mismatch=audit.name_mismatch_detected,
+    score=audit.compliance_score,
+    notes=audit.audit_notes,
+)
+```
+
+The dashboard surfaces **4 live ClickHouse metrics** updated on every audit run:
+
+| Metric | ClickHouse Query |
+|---|---|
+| Total processed | `count()` |
+| Avg compliance | `round(avg(compliance_score), 3)` |
+| Expired IDs | `countIf(is_expired = 1)` |
+| RIB fraud alerts | `countIf(name_mismatch = 1)` |
 
 ---
 
 ## Dashboard Preview
 
-The dashboard runs on a **James Bond 007 dark theme** — obsidian black `#0A0A0B`, pure white titles, MI6 red `#E50914` for alerts.
-
-**3 screens in one interface:**
+James Bond 007 dark theme — obsidian black `#0A0A0B`, pure white titles, MI6 red `#E50914` for alerts.
 
 | Screen | Description |
 |---|---|
-| **Studio Control Center** | 4 live ClickHouse metrics: documents processed, average compliance, expired IDs, RIB fraud alerts |
-| **Live Dropzone** | Drag & drop one or multiple files — agents execute and log in real time |
-| **Audit Report** | Color-coded expandable panels per file (🔴 anomaly auto-expanded, 🟢 compliant collapsed) |
+| **Studio Control Center** | 4 live ClickHouse metrics |
+| **Crew Roster** | Dynamic multi-member form — add N crew members, each with 4 document slots |
+| **Production Report** | Per-member compliance badge + ADK decision (VALIDATED / PENDING / BLOCKED) + HR note + email EN/FR |
 
 ---
 
@@ -122,154 +158,97 @@ The dashboard runs on a **James Bond 007 dark theme** — obsidian black `#0A0A0
 
 ```
 navoursync-ai/
+├── app.py                    # Streamlit Cloud entrypoint
 ├── src/
 │   ├── agents/
-│   │   ├── classifier.py     # Agent 00-VISION — VisionClassifierAgent
-│   │   ├── auditor.py        # Agent 00-AUDITOR — AuditorAgent + Pydantic models
-│   │   └── dispatcher.py     # Agent 00-DISPATCH — DispatcherAgent
+│   │   ├── adk_pipeline.py   # ← ADK OrchestratorAgent + 3 FunctionTools
+│   │   ├── classifier.py     # 00-VISION — VisionClassifierAgent
+│   │   ├── auditor.py        # 00-AUDITOR — AuditorAgent (temp=0.0)
+│   │   └── dispatcher.py     # 00-DISPATCH — DispatcherAgent
 │   ├── db/
-│   │   └── client.py         # ClickHouseManager — connect, log_audit, get_compliance_stats
-│   ├── schemas.py            # Unified Pydantic model exports
+│   │   └── client.py         # ClickHouseManager — log_audit, get_compliance_stats
+│   ├── utils/
+│   │   ├── gemini_client.py  # Vertex AI / API key factory
+│   │   └── retry.py          # Exponential backoff on 429/503
+│   ├── schemas.py            # Unified Pydantic exports
 │   ├── app.py                # Streamlit production dashboard
 │   └── main.py               # CLI pipeline runner
-├── data/
-│   └── samples/              # Local test documents (gitignored)
 ├── tests/
 │   └── validate_mock.py      # Schema validation without API calls
-├── .env                      # API credentials — never commit
-├── requirements.txt
-└── README.md
+└── requirements.txt
 ```
 
 ---
 
 ## Installation
 
-**1. Clone the repository**
 ```bash
-git clone https://github.com/your-username/navoursync-ai.git
+git clone https://github.com/gedenedavid-ops/navoursync-ai.git
 cd navoursync-ai
-```
-
-**2. Create and activate a virtual environment**
-```bash
-python -m venv venv
-source venv/bin/activate      # macOS / Linux
-venv\Scripts\activate         # Windows
-```
-
-**3. Install dependencies**
-```bash
 pip install -r requirements.txt
 ```
 
-**4. Configure environment variables**
+### Option A — Vertex AI (recommended, uses GCP credits)
 
-Create a `.env` file at the project root:
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project gen-lang-client-0731365913
+```
+
 ```env
-# Gemini API — https://aistudio.google.com/app/apikey
-GEMINI_API_KEY=your_gemini_api_key_here
+USE_VERTEX_AI=true
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+```
 
-# ClickHouse Cloud
+### Option B — API key (Google AI Studio)
+
+```env
+USE_VERTEX_AI=false
+GEMINI_API_KEY=AIzaSy...
+```
+
+### ClickHouse credentials
+
+```env
 CLICKHOUSE_HOST=your_instance.clickhouse.cloud
 CLICKHOUSE_PORT=8443
 CLICKHOUSE_USER=default
 CLICKHOUSE_PASSWORD=your_password
-CLICKHOUSE_DB=default
-```
-
-**5. Verify ClickHouse connection**
-```bash
-python -c "
-from dotenv import load_dotenv; load_dotenv()
-from src.db.client import ClickHouseManager
-db = ClickHouseManager(); db.connect()
-"
-```
-
-Expected output:
-```
-[ClickHouse] Connexion etablie avec succes.
-[ClickHouse] Table document_audits prete.
 ```
 
 ---
 
-## Run the Dashboard
+## Run
 
 ```bash
+# Dashboard
 python -m streamlit run src/app.py
-```
 
-Open **http://localhost:8501** in your browser.
-
-### How to use
-
-1. **Sidebar** — Enter the production name and the crew member's full reference name (exactly as it appears on their ID card)
-2. **Dropzone** — Upload one or more documents (JPG/PNG): ID card, RIB, contract, image rights form
-3. **Click RUN COMPLIANCE AUDIT** — the 3 Gemini agents execute sequentially per file, with live logs
-4. **Read the report** — each file gets a color-coded expandable panel:
-   - 🔴 **Red** (auto-expanded) — anomaly detected: expired ID, name mismatch, or other issue
-   - 🟢 **Green** — fully compliant, cleared for the shoot
-5. **00-DISPATCH notification** — a ready-to-send professional email is generated at the bottom of each anomaly panel
-
-### What gets detected
-
-| Check | Trigger | Output |
-|---|---|---|
-| Document type | Any uploaded file | Category + confidence % |
-| Expired document | Expiry date < today | `⚠ EXPIRED DOCUMENT` in red |
-| RIB name mismatch | RIB holder ≠ reference name | `⚠ RIB NAME ... DOES NOT MATCH` in red |
-| Handwritten text | Handwritten request detected | Full transcription in text block |
-| Low compliance | Any anomaly combination | Score below 100% + dispatch email |
-
----
-
-## Run the CLI Pipeline
-
-```bash
+# CLI pipeline
 python -m src.main
-```
 
----
+# ADK pipeline direct
+python -c "
+from src.agents.adk_pipeline import run_pipeline
+print(run_pipeline('Audit file data/samples/id.jpg for crew member KOUAKOU DAVID'))
+"
 
-## Run Schema Validation
-
-```bash
+# Schema validation (no API required)
 python -m tests.validate_mock
-```
-
----
-
-## ClickHouse Schema
-
-```sql
-CREATE TABLE IF NOT EXISTS document_audits (
-    audit_id         UUID     DEFAULT generateUUIDv4(),
-    timestamp        DateTime DEFAULT now(),
-    document_type    String,           -- 'cni_passport', 'rib_iban', 'contract'…
-    confidence       Float32,          -- 00-VISION confidence score (0.0–1.0)
-    full_name        String,           -- Extracted by 00-AUDITOR
-    document_number  String,           -- ID number or IBAN
-    is_expired       UInt8,            -- 1 = expired, 0 = valid
-    name_mismatch    UInt8,            -- 1 = fraud alert, 0 = OK
-    compliance_score Float32,          -- 00-AUDITOR overall score (0.0–1.0)
-    audit_notes      String            -- Human-readable audit summary
-) ENGINE = MergeTree()
-ORDER BY (timestamp, document_type);
 ```
 
 ---
 
 ## Hackathon Roadmap
 
-| Week | Dates | Status |
+| Week | Deliverables | Status |
 |---|---|---|
-| **Week 1** — Architecture & Core Agents | Aug 1–7 | ✅ Done |
-| **Week 2** — ClickHouse Integration | Aug 8–14 | ✅ Done |
-| **Week 3** — Production Dashboard | Aug 15–22 | ✅ Done |
-| **Week 4** — Demo Trailer (3 min video) | Aug 23–31 | 🔲 Upcoming |
-| **Week 5** — Devpost Submission | Sep 1–7 | 🔲 Upcoming |
+| **Week 1** — Architecture & Core Agents | ADK agents, Pydantic schemas | ✅ Done |
+| **Week 2** — ClickHouse Integration | Real-time audit persistence | ✅ Done |
+| **Week 3** — Production Dashboard | Streamlit UI, Vertex AI auth | ✅ Done |
+| **Week 4** — Demo Trailer | 3-min video, ElevenLabs voiceover | 🔲 In progress |
+| **Week 5** — Devpost Submission | README, video link, live demo | 🔲 Upcoming |
 
 **Deadline: September 7, 2026 @ 10:00 AM GMT-11**
 
@@ -282,5 +261,10 @@ MIT License — see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <sub>Built with Google Gemini · ClickHouse · Streamlit · Pydantic · Python</sub>
+  Built with&nbsp;
+  <a href="https://deepmind.google/technologies/gemini/">Google Gemini 2.5</a> ·
+  <a href="https://google.github.io/adk-docs/">Google ADK</a> ·
+  <a href="https://clickhouse.com">ClickHouse Cloud</a> ·
+  <a href="https://streamlit.io">Streamlit</a> ·
+  <a href="https://pydantic.dev">Pydantic v2</a>
 </p>

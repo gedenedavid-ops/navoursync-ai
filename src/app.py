@@ -197,6 +197,16 @@ with st.sidebar:
     st.markdown("### NavourSync AI")
     st.caption("v1.0.0 — Production")
     st.markdown("---")
+    # Partner badge
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+        '<span style="font-size:11px;color:#3a3a3f;letter-spacing:1px;text-transform:uppercase;">Partner</span>'
+        '<span style="background:#FFDD57;color:#1a1a1a;font-size:10px;font-weight:700;'
+        'padding:2px 8px;border-radius:2px;letter-spacing:0.5px;">ClickHouse Cloud</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("---")
 
     production_title = st.text_input("Production", "PRODUCTION_001", label_visibility="visible")
 
