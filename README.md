@@ -10,6 +10,7 @@
 [![ClickHouse Partner](https://img.shields.io/badge/Partner-ClickHouse%20Cloud-FFDD57.svg)](https://clickhouse.com)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-red.svg)](https://streamlit.io)
 [![Hackathon](https://img.shields.io/badge/Hackathon-Agentic%20Cinema%202026-blue.svg)](https://devpost.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Cloud%20Run-34A853.svg)](https://navoursync-ai-lb3o67bseq-uc.a.run.app)
 
 ---
 
