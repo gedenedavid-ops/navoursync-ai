@@ -7,6 +7,7 @@ from google.genai.errors import ClientError
 from src.agents.classifier import VisionClassifierAgent
 from src.agents.auditor import AuditorAgent
 from src.agents.dispatcher import DispatcherAgent
+from src.agents.adk_pipeline import orchestrator_agent          # ADK native
 from src.db.client import ClickHouseManager
 
 load_dotenv()
@@ -182,6 +183,8 @@ def init_system():
     dispatch = DispatcherAgent()
     db = ClickHouseManager()
     db.connect()
+    # ADK orchestrator pre-warmed (tools already bound at import)
+    _ = orchestrator_agent
     return vision, auditor, dispatch, db
 
 
@@ -206,9 +209,11 @@ with st.sidebar:
         gemini_status = "🟢 Gemini — API key"
     else:
         gemini_status = "🔴 Gemini — not configured"
-    ch_status = "🟢 ClickHouse — connected" if db_manager.client else "🟡 ClickHouse — offline"
+    ch_status  = "🟢 ClickHouse — connected" if db_manager.client else "🟡 ClickHouse — offline"
+    adk_status = f"🟢 ADK — {orchestrator_agent.name}"
     st.markdown(f"<small>{gemini_status}</small>", unsafe_allow_html=True)
     st.markdown(f"<small>{ch_status}</small>", unsafe_allow_html=True)
+    st.markdown(f"<small>{adk_status}</small>", unsafe_allow_html=True)
 
     if not api_ready:
         st.markdown("---")
