@@ -65,8 +65,18 @@ class ClickHouseManager:
         notes: str,
     ):
         """Insere un rapport d'audit dans ClickHouse."""
-        if not self.client:
-            print("[ClickHouse] Non connecte — enregistrement ignore.")
+        import clickhouse_connect
+        try:
+            client = clickhouse_connect.get_client(
+                host=self.host,
+                port=self.port,
+                username=self.user,
+                password=self.password,
+                database=self.database,
+                secure=True,
+            )
+        except Exception as e:
+            print(f"[ClickHouse] Non connecte — enregistrement ignore. Erreur: {e}")
             return
 
         row = [
@@ -80,21 +90,24 @@ class ClickHouseManager:
             notes,
         ]
 
-        self.client.insert(
-            "document_audits",
-            [row],
-            column_names=[
-                "document_type",
-                "confidence",
-                "full_name",
-                "document_number",
-                "is_expired",
-                "name_mismatch",
-                "compliance_score",
-                "audit_notes",
-            ],
-        )
-        print("[ClickHouse] Audit sauvegarde.")
+        try:
+            client.insert(
+                "document_audits",
+                [row],
+                column_names=[
+                    "document_type",
+                    "confidence",
+                    "full_name",
+                    "document_number",
+                    "is_expired",
+                    "name_mismatch",
+                    "compliance_score",
+                    "audit_notes",
+                ],
+            )
+            print("[ClickHouse] Audit sauvegarde.")
+        finally:
+            client.close()
 
     def get_compliance_stats(self) -> dict:
         """Retourne les metriques de conformite globales depuis ClickHouse.

@@ -430,7 +430,7 @@ else:
                     notes=audit.audit_notes,
                 )
                 audits.append({
-                    "file":     uf.name,
+                    "filename": uf.name,
                     "doc_type": doc_type.value,
                     "audit":    audit,
                 })
@@ -449,8 +449,8 @@ else:
                         reference_name=name,
                         production_title=production_title,
                     )
-                except Exception:
-                    pass  # notification non bloquante
+                except Exception as e:
+                    st.error(f"Failed to generate notification for {name}: {str(e)}")
 
             all_member_results.append({
                 "name":    name,
@@ -530,7 +530,7 @@ else:
                         (audit.bank_data and audit.name_mismatch_detected)
                     )
                     st.markdown(
-                        f"**{item['file']}** &nbsp;"
+                        f"**{item['filename']}** &nbsp;"
                         f"<span style='color:#555560;font-size:11px;'>{item['doc_type']}</span>",
                         unsafe_allow_html=True,
                     )

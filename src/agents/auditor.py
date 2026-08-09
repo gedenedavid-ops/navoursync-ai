@@ -5,6 +5,7 @@ from google.genai import types
 from src.agents.classifier import DocumentType
 from src.utils.retry import call_with_retry
 from src.utils.gemini_client import get_gemini_client
+from datetime import datetime
 
 
 # 1. Modèles Pydantic pour structurer les données extraites
@@ -51,12 +52,13 @@ class AuditorAgent:
         with open(file_path, "rb") as f:
             file_bytes = f.read()
 
+        current_month = datetime.now().strftime("%B %Y")
         prompt = f"""
         You are the '00-AUDITOR' agent of NavourSync AI.
         The document has been identified as: {doc_type.value}.
         Your mission:
         1. Extract all mandatory text fields rigorously.
-        2. If this is an ID card or passport, check whether the expiry date has passed relative to today (August 2026).
+        2. If this is an ID card or passport, check whether the expiry date has passed relative to today ({current_month}).
         3. If a reference name is provided, compare it against the name on the document using these rules:
            - Reference name: "{reference_name or 'N/A'}"
            - Normalize both names before comparing: convert to uppercase, strip accents, ignore extra spaces.
