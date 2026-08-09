@@ -8,7 +8,12 @@ class ClickHouseManager:
         self.port = int(os.getenv("CLICKHOUSE_PORT", "8123"))
         self.user = os.getenv("CLICKHOUSE_USER", "default")
         self.password = os.getenv("CLICKHOUSE_PASSWORD", "")
-        self.database = os.getenv("CLICKHOUSE_DB", "default")
+        # Accept both CLICKHOUSE_DATABASE (Cloud Run) and CLICKHOUSE_DB (legacy)
+        self.database = (
+            os.getenv("CLICKHOUSE_DATABASE")
+            or os.getenv("CLICKHOUSE_DB")
+            or "default"
+        )
         self.client = None
 
     def connect(self):

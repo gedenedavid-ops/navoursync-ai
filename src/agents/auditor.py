@@ -61,10 +61,14 @@ class AuditorAgent:
            - Reference name: "{reference_name or 'N/A'}"
            - Normalize both names before comparing: convert to uppercase, strip accents, ignore extra spaces.
            - Reversed first name / last name order counts as a MATCH (e.g. "Damon Salvatorr" == "Salvatorr Damon").
-           - Minor spelling differences (1–2 characters) between identical tokens count as a MATCH (e.g. "salavtor" ≈ "Salvatorr").
-           - Set name_mismatch_detected=true ONLY if the names clearly refer to two different people after applying the above rules.
+           - Minor spelling variation on the SAME name tokens counts as a MATCH (e.g. "salavtor" ≈ "Salvatorr").
+           - If the document name contains COMPLETELY DIFFERENT tokens that do not appear in the reference name at all
+             (e.g. reference="salavtor damon", document="VALERIE CORBEDDA") → name_mismatch_detected=true.
+           - If NONE of the name tokens match even approximately → always name_mismatch_detected=true.
         4. If this is a handwritten request, transcribe the full text accurately.
         5. For RIB/IBAN documents: extract the account holder name and IBAN exactly as printed.
+           If the RIB holder name does not match the reference name → name_mismatch_detected=true (potential bank fraud).
+        6. compliance_score: start at 1.0, subtract 0.5 if mismatch, 0.3 if expired, 0.2 if fields missing.
         """
 
         response = call_with_retry(lambda: self.client.models.generate_content(
