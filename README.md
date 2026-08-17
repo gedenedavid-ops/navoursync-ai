@@ -105,6 +105,7 @@ HR data (names, document numbers, expiry dates) requires **zero creativity**. Te
 | **Agent Framework** | Google ADK (`google-cloud-aiplatform[adk]`) v2.6.1 | Native ADK — no wrapper libraries |
 | **AI Model** | Gemini 2.5 Flash via `google-genai` SDK | Multimodal, structured JSON output |
 | **Cloud Backend** | Google Cloud Vertex AI Agent Engine | Serverless agent hosting |
+| **Deployment** | Google Cloud Run | Containerized, auto-scaling, production URL |
 | **Partner Database** | **ClickHouse Cloud** (`clickhouse-connect`) | Real-time audit analytics |
 | **Data Validation** | Pydantic v2 | Deterministic JSON schemas |
 | **Dashboard UI** | Streamlit | Deployed on Streamlit Community Cloud |
