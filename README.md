@@ -257,7 +257,7 @@ python -m tests.validate_mock
 | **Week 1** — Architecture & Core Agents | ADK agents, Pydantic schemas | ✅ Done |
 | **Week 2** — ClickHouse Integration | Real-time audit persistence | ✅ Done |
 | **Week 3** — Production Dashboard | Streamlit UI, Vertex AI, Cloud Run | ✅ Done |
-| **Week 4** — Demo Trailer | 3-min video, ElevenLabs voiceover | 🔲 In progress |
+| **Week 4** — Demo Trailer | 3-min video, ElevenLabs voiceover | ✅ Done |
 | **Week 5** — Devpost Submission | Final README, video link, live demo | 🔲 Upcoming |
 
 **Deadline: September 7, 2026 @ 10:00 AM GMT-11**
