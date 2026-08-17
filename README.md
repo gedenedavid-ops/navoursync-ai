@@ -108,7 +108,7 @@ HR data (names, document numbers, expiry dates) requires **zero creativity**. Te
 | **Deployment** | Google Cloud Run | Containerized, auto-scaling, production URL |
 | **Partner Database** | **ClickHouse Cloud** (`clickhouse-connect`) | Real-time audit analytics |
 | **Data Validation** | Pydantic v2 | Deterministic JSON schemas |
-| **Dashboard UI** | Streamlit | Deployed on Streamlit Community Cloud |
+| **Dashboard UI** | Streamlit | Served via Google Cloud Run |
 | **Auth** | Vertex AI ADC / Service Account | Production-grade GCP auth |
 | **Runtime** | Python 3.10+ | — |
 
@@ -240,6 +240,14 @@ print(run_pipeline('Audit file data/samples/id.jpg for crew member KOUAKOU DAVID
 python -m tests.validate_mock
 ```
 
+
+
+---
+
+## Demo Video
+
+> 🎬 **Coming soon** — demo video will be added before the submission deadline (September 7, 2026).
+
 ---
 
 ## Hackathon Roadmap
@@ -248,9 +256,9 @@ python -m tests.validate_mock
 |---|---|---|
 | **Week 1** — Architecture & Core Agents | ADK agents, Pydantic schemas | ✅ Done |
 | **Week 2** — ClickHouse Integration | Real-time audit persistence | ✅ Done |
-| **Week 3** — Production Dashboard | Streamlit UI, Vertex AI auth | ✅ Done |
+| **Week 3** — Production Dashboard | Streamlit UI, Vertex AI, Cloud Run | ✅ Done |
 | **Week 4** — Demo Trailer | 3-min video, ElevenLabs voiceover | 🔲 In progress |
-| **Week 5** — Devpost Submission | README, video link, live demo | 🔲 Upcoming |
+| **Week 5** — Devpost Submission | Final README, video link, live demo | 🔲 Upcoming |
 
 **Deadline: September 7, 2026 @ 10:00 AM GMT-11**
 
