@@ -1,4 +1,5 @@
 import os
+import sys
 import clickhouse_connect
 
 
@@ -18,6 +19,7 @@ class ClickHouseManager:
 
     def connect(self):
         """Etablit la connexion avec l'instance ClickHouse."""
+        print(f"[ClickHouse] Tentative connexion — host={self.host} port={self.port} user={self.user} db={self.database} password_set={bool(self.password)}", flush=True, file=sys.stderr)
         try:
             self.client = clickhouse_connect.get_client(
                 host=self.host,
@@ -27,10 +29,10 @@ class ClickHouseManager:
                 database=self.database,
                 secure=True,
             )
-            print("[ClickHouse] Connexion etablie avec succes.")
+            print("[ClickHouse] Connexion etablie avec succes.", flush=True, file=sys.stderr)
             self._init_db()
         except Exception as e:
-            print(f"[ClickHouse] Mode Offline — connexion impossible : {e}")
+            print(f"[ClickHouse] ERREUR connexion : {type(e).__name__}: {e}", flush=True, file=sys.stderr)
 
     def _init_db(self):
         """Cree la table analytique si elle n'existe pas."""
